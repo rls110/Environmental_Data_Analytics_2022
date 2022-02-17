@@ -30,6 +30,7 @@ PeterPaul.chem.nutrients.gathered <-
   read.csv("./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaulGathered_Processed.csv", stringsAsFactors = TRUE)
 EPAair <- read.csv("./Data/Processed/EPAair_O3_PM25_NC2021_Processed.csv", stringsAsFactors = TRUE)
 
+# Converting dates to date class
 EPAair$Date <- as.Date(EPAair$Date, format = "%Y-%m-%d")
 PeterPaul.chem.nutrients$sampledate <- as.Date(PeterPaul.chem.nutrients$sampledate, format = "%Y-%m-%d")
 PeterPaul.chem.nutrients.gathered$sampledate <- as.Date(PeterPaul.chem.nutrients.gathered$sampledate, format = "%Y-%m-%d")
@@ -107,8 +108,7 @@ print(PMplot.faceted)
 
 # Filter dataset within plot building and facet by multiple variables
 PMplot.faceted2 <- 
-  ggplot(subset(EPAair, Site.Name == "Clemmons Middle" | Site.Name == "Leggett" |
-                  Site.Name == "Bryson City"), 
+  ggplot(subset(EPAair, Site.Name == "Clemmons Middle" | Site.Name == "Leggett" |Site.Name == "Bryson City"), 
          aes(x = Month, y = PM2.5)) + 
   geom_point() +
   facet_grid(Site.Name ~ Year) 
@@ -120,8 +120,6 @@ PMplot.line <-
          aes(x = Date, y = PM2.5)) +
   geom_line()
 print(PMplot.line)
-
-
 ```
 
 

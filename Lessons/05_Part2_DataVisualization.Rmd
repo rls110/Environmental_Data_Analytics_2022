@@ -236,7 +236,7 @@ Neonics <- read.csv("./Data/Raw/ECOTOX_Neonicotinoids_Insects_raw.csv")
 ggplot(Neonics) +
   geom_bar(aes(x = Endpoint))
 
-
-
-
+Neonics$Endpoint <- reorder(Neonics$Endpoint, Neonics$Endpoint, FUN = length)
+Neonics.plot <- ggplot(Neonics, aes(x = Endpoint)) + geom_bar(fill = "#7fcdbb", color = "black", size = 0.25) + scale_x_discrete(limits = rev(levels(Neonics$Endpoint))) + labs(y = "Number of Publications with reported endpoint") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+print(Neonics.plot)
 ```
