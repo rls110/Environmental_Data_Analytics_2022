@@ -18,7 +18,8 @@ editor_options:
 ## Set up
 ```{r, message = FALSE}
 library(tidyverse)
-library(agricolae)   
+library(agricolae) 
+library(corrplot)
 
 PeterPaul.chem.nutrients <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv", stringsAsFactors = TRUE)
 # Set date to date format
@@ -94,7 +95,7 @@ print(Ozone.plot)
 
 Write a sentence or two about the results of this test. Include both the results of the test and an interpretation that puts the findings in context of the research question.
 
-> 
+> The average ozone level is significantly less than the air quality standard of 50ppm (t=##, p<0.001).
 
 ### Two-sample t-test
 
@@ -151,8 +152,23 @@ Create three plots, each with appropriately formatted axes and legends. Choose a
 
 ```{r}
 #Exercise 2:
+ggplot(data = EPAair, aes(x = Ozone, fill = as.factor(Year))) + 
+  geom_density(alpha = 0.5) + 
+  labs(title = "Density Plot: Ozone by year", x = "Ozone AQI Value", 
+       y = "Density", fill = "Year") + 
+  scale_fill_manual(values = c("blue", "yellow"))
 
+ggplot(data = EPAair, aes(x = as.factor(Year), y = Ozone)) + 
+  geom_boxplot() + stat_summary(geom = "text", fun = max, vjust = -1, 
+                                size = 4, label = c("a", "b"), 
+                                color = "red") + 
+  labs(x = "", y = "Ozone AQI Value") + ylim(0,150)
 
+ggplot(data = EPAair, aes(x = as.factor(Year), y = Ozone)) + 
+  geom_violin(draw_quantiles = 0.5) + 
+  stat_summary(geom = "text", fun = max, vjust = -1, size = 4, 
+               label = c("a", "b"), color = "red") + 
+  labs(x = "", y = "Ozone AQI Value") + ylim(0,150)
 ```
 
 ## Linear Regression
@@ -164,15 +180,16 @@ For the NTL-LTER dataset, can we predict PM2.5 from Ozone?
 ```{r}
 
 #Exercise 3: Run a linear regression PM2.5 by Ozone. Find the p-value and R-squared value. 
-
-
+lm.1 <- lm(PM2.5 ~ Ozone, data = EPAair)
+summary(lm.1)
+  # R2 = 13.16%, p < 0.001
 
 #Exercise 4: Build a scatterplot. Add a line and standard error for the linear regression. 
-
-
+ggplot(data = EPAair, aes(x = Ozone, y = PM2.5)) + geom_point() + geom_smooth(method = lm, col = "blue", se = F)
 
 ```
 
+Ozone concentration has a statiscally significant relationship with particulate matter concentration (R2 = ##, F = ##, p < 0.001). Specifically, ozone accounts for approximately 13% of the variance in PM.
 
 ## AIC to select variables
 
@@ -181,16 +198,21 @@ What other variables can we add to improve model?
 ```{r}
 
 #Exercise 5: Build correlation plots and identify more possible explanatory variables to add to the regression.
-
-
-
+EPAcor <- cor(EPAair%>% select(meanLat:Ozone) %>% drop_na())
+corrplot(EPAcor, method = "ellipse")
+corrplot.mixed(EPAcor, upper = "ellipse")
 
 #Exercise 6: Choose a model by AIC in a Stepwise Algorithm. Do the results from AIC match the variables you selected on Exercise 5?
+lm.2 <- lm(data = EPAair, PM2.5 ~ Ozone + Year + Month + meanLat + meanLng)
+summary(lm.2)
 
-
-
+step(lm.2)
 
 #Exercise 7: Run another regression using the variables selected on Exercise 6. Compare r-squared value with the one from Exercise 5. 
+lm.3 <- lm(data = EPAair, PM2.5 ~ Ozone + Month + meanLat + meanLng)
+summary(lm.3)
+
+# R2 = 19.26%, p < 0.001
 
 ```
 
