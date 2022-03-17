@@ -81,16 +81,18 @@ BRA_complete <- inner_join(Rainfall_BR_processed,Temp_BR_processed)
 ```{r}
 
 #Exercise 5: Check if there is any missing data for both temperature and rainfall series.
+summary(BRA_complete$Rainfall)
+summary(BRA_complete$Temperature_C)
 
-
-
+# No NAs!
 
 #Exercise 6: Plot both series over time on separate plots. Add a trend line using geom_smooth(). Can you say something about the trend just by visualizing the data?
+ggplot(BRA_complete, aes(x = Date, y = Rainfall)) + geom_line() + 
+  geom_smooth(method = lm)
+ggplot(BRA_complete, aes(x = Date, y = Temperature_C)) + geom_line() + 
+  geom_smooth(method = lm)
 
-
-
-
-
+# Temperature displays a clear positive trend, while there is only a slight positive trend in rainfall
 
 ```
 
@@ -98,8 +100,8 @@ BRA_complete <- inner_join(Rainfall_BR_processed,Temp_BR_processed)
 
 ```{r}
 #Exercise 7: Create a time series objects for each series using ts(). Make sure you specify the starting point and frequency.
-
-
+BRA.temp.ts <- ts(BRA_complete$Temperature_C, start = c(1901,1), frequency = 12)
+BRA.rf.ts <- ts(BRA_complete$Rainfall, start = c(1901,1), frequency = 12)
 
 ```
 
@@ -120,27 +122,31 @@ The `stl` function decomposes the time series object into its component parts. W
 
 # Exercise 8: Use the stl() function to decompose both series. 
 # Visualize the decomposed series using plot(). What components can you identify?
+temp_decomp <- stl(BRA.temp.ts, s.window = "periodic")
+rf_decomp <- stl(BRA.rf.ts, s.window = "periodic")
 
-
-
-
+plot(temp_decomp)
+plot(rf_decomp)
 
 
 # Exercise 9: Use the times series object generated with the stl() to extract the 
 # components of each series and turn them into data frames.
+temp.comps <- as.data.frame(temp_decomp$time.series[,1:3])
+rf.comps <- as.data.frame(rf_decomp$time.series[,1:3])
 
-
-
-
-
+temp.comps <- mutate(temp.comps, 
+                     Observed = BRA_complete$Temperature_C,
+                     Date = BRA_complete$Date)
+rf.comps <- mutate(rf.comps,
+                   Observed = BRA_complete$Rainfall,
+                   Date = BRA_complete$Date)
 
 # Exercise 10: Visualize how the trend maps onto the data for both series
+ggplot(temp.comps) + geom_line(aes(x = Date, y = Observed), size = 0.25) + 
+  geom_line(aes(x = Date, y = trend), color = "purple")
 
-
-
-
-
-
+ggplot(rf.comps) + geom_line(aes(x = Date, y = Observed), size = 0.25) + 
+  geom_line(aes(x = Date, y = trend), color = "red")
 ```
 
 
