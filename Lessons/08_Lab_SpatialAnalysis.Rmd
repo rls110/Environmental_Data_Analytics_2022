@@ -80,11 +80,11 @@ mapView(counties_sf, zcol = "AWATER")
 
 ```{r read HUCs shapefile}
 #Read the shapefile into an sf dataframe named "huc8_sf"
-
-
+huc8_sf <- read_sf("./Data/Spatial/NCHUC8.shp")
 
 #View the data as a map, colored by the acreage in each
-
+ggplot(huc8_sf) + geom_sf(aes(fill = ACRES)) + 
+  scale_fill_continuous(type = "viridis")
 
 ```
 
@@ -94,11 +94,12 @@ mapView(counties_sf, zcol = "AWATER")
 
 ```{r Select the Upper Neuse HUC 8}
 #Read the shapefile into an sf dataframe
-
-
+huc8_sf_UN <- huc8_sf %>%
+  filter(SUBBASIN == "Upper Neuse")
 
 #Create a map
-
+ggplot(huc8_sf) + geom_sf(fill = "orange") + 
+  geom_sf(data = huc8_sf_UN, fill = "purple")
 
 ```
 
@@ -114,19 +115,18 @@ The URL '<https://raw.githubusercontent.com/ENV859/EnviroAtlasData/main/Wind_Ene
 
 ```{r}
 #Compute HUC8 wind energy
-
-
-
+wind_energy_huc8 <- read.csv('https://raw.githubusercontent.com/ENV859/EnviroAtlasData/main/Wind_Energy.csv', colClasses = c("HUC_12" = "factor")) %>%
+  mutate(HUC_8 = substr(HUC_12, 1, 8)) %>%
+  group_by(HUC_8) %>%
+  summarize(WindPower = sum(AvgWindEnergy))
 
 #Join to HUC_8 features
-
-
-
+huc8_sf_wind <- left_join(huc8_sf, wind_energy_huc8, by = "HUC_8")
 
 #View the outputs
+head(huc8_sf_wind)
 
-
-
+ggplot(huc8_sf_wind) + geom_sf(aes(fill = WindPower))
 ```
 
 ### EXERCISE 3.1.2: Data aggregation
@@ -134,15 +134,16 @@ Aggregate the HUC_8 data on the `DWQ_Basin` attribute, computing the sum of the 
 
 ```{r Aggregate the HUC data on an attribute, saving as huc2_sf}
 #List the unique values in the DWQ_Basin field
-
-
+unique(huc8_sf_wind$DWQ_Basin)
 
 #Summarize on DWQ Basin value
-
-
+huc8_sf_DWQ <- huc8_sf %>%
+  group_by(DWQ_Basin) %>%
+  summarise(sum_ACRES = sum(ACRES),
+            sum_sqMI = sum(SQ_MILES))
 
 #Map the data
-
+mapview(huc8_sf_DWQ)
 
 ```
 
@@ -154,11 +155,11 @@ On top of projecting any geographic data to adjust for the limitations of the so
 
 ```{r Transform the datasets to other coordinate reference systems}
 #Convert all to UTM Zone 17 (crs = 26917)
-epa_sf_utm <-      st_transform(epa_pm25_sites_sf, crs = 26917)
-counties_sf_utm <- 
-state_sf_utm <-    
-huc8_sf_utm <-     
-huc2_utm <-        
+epa_sf_utm <- st_transform(epa_pm25_sites_sf, crs = 26917)
+counties_sf_utm <- st_transform()
+state_sf_utm <- 
+huc8_sf_utm <- st_transform(huc8_sf, crs = 26917)   
+huc2_utm <- 
 ```
 
 ## 3.3 Clipping and intersecting data
@@ -168,18 +169,26 @@ Select the counties in the "Triangle" (Chatham, Durham, Orange, and Wake). Then 
 
 ```{r EXERCISE: Clipping}
 #Select the Triangle counties from the sf_counties dataframe
+triangle_co <- counties_sf_utm %>%
+  filter(NAME %in% c("Chatham", "Durham", "Orange", "Wake"))
 
+mapview(triangle_co)
 
-
-  
 #Grab the intersecting HUC_8s
+triangle_HUCs <- huc8_sf_utm %>%
+  filter(st_intersects(x = ., y = triangle_co, sparse = F))
 
+triangle_HUCs <- huc8_sf_utm[triangle_co,]
 
+ggplot() +
+  geom_sf(data = triangle_co, color = "grey") +
+  geom_sf(data = huc8_sf_utm, color = "green", fill = NA) +
+  geom_sf(data = triangle_HUCs, color = "blue", fill = NA)
 
 #Intersect the HUC_8s
-
-
-
+triangle_HUCs.clipped <- triangle_co %>%
+  st_intersection(huc8_sf_utm)
+mapview(triangle_HUCs.clipped)
 
 ```
 
