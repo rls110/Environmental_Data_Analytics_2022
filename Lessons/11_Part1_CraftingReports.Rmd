@@ -1,6 +1,6 @@
 ---
 title: '11: Crafting Reports'
-author: Environmental Data Analytics | John Fay & Luana Lima | Developed by Kateri Salk
+author: Rachel Schoenecker
 date: "Spring 2022"
 output:
  pdf_document: default
@@ -69,15 +69,19 @@ See: <https://rmarkdown.rstudio.com> and class recording.
 - Different coding languages available
 - Managing how code/products are displayed
 - Add formatted test along with our code
-- All text-based - good for reproducibility
-
-
-I _love_ __CROSS COUNTRY__!!!!!!
+- All text-based - __good__ for reproducibility
 
 ## TEXT EDITING CHALLENGE
 
 Create a table below that details the example datasets we have been using in class. The first column should contain the names of the datasets and the second column should include some relevant information about the datasets. (Hint: use the cheat sheets to figure out how to make a table in Rmd)
 
+Dataset          | Description
+---------------- | -----------------------------------
+EPA Air          | Air pollution concentrations
+NTL-LTER Lakes   | Pollutants in WI Lakes
+NEON NIWO Litter | Plant litter characteristics
+ECOTOX           | Effect of neonicotinoids on insects
+NWIS Flow        | Nebraska gauge flow heights
 
 
 ## R CHUNK EDITING CHALLENGE
@@ -86,10 +90,25 @@ Create a table below that details the example datasets we have been using in cla
 
 Create an R chunk below that installs the package `knitr`. Instead of commenting out the code, customize the chunk options such that the code is not evaluated (i.e., not run).
 
-
+```{r install knitr, eval=F}
+install.packages(knitr)
+```
 ### Setup
 
 Create an R chunk below called "setup" that checks your working directory, loads the packages `tidyverse`, `lubridate`, and `knitr`, and sets a ggplot theme. Remember that you need to disable R throwing a message, which contains a check mark that cannot be knitted.
+
+```{r setup, message=F, eval=T, echo=F}
+getwd()
+library(tidyverse); library(lubridate); library(knitr)
+mytheme <- theme_bw(base_size = 10) +
+  theme(axis.text = element_text(color = "black"), 
+        legend.position = "right")
+theme_set(mytheme)
+
+lakes <- read.csv("../Data/Raw/NTL-LTER_Lake_Nutrients_Raw.csv")
+head(lakes)
+lakes$sampledate <- as.Date(lakes$sampledate, format = "%m/%d/%y")
+```
 
 Load the NTL-LTER_Lake_Nutrients_Raw dataset, display the head of the dataset, and set the date column to a date format.
 
@@ -104,17 +123,64 @@ Create an R chunk below to create a processed dataset do the following operation
 -   Include only surface samples (depth = 0 m)
 -   Drop rows with missing data
 
+```{r wrangling}
+lakes_tidy <- lakes %>%
+  select(lakename:sampledate, depth:po4) %>%
+  filter(depth == 0) %>%
+  drop_na()
+```
+
 Create a second R chunk to create a summary dataset with the mean, minimum, maximum, and standard deviation of total nitrogen concentrations for each lake. Create a second summary dataset that is identical except that it evaluates total phosphorus. Customize the chunk options such that the code is run but not displayed in the final document.
+
+```{r summary, eval=T, echo=F}
+lakes_summary_n <- lakes_tidy %>%
+  group_by(lakename) %>%
+  summarize(mean_n = mean(tn_ug), min_n = min(tn_ug), max_n = max(tn_ug),
+            sd_n = sd(tn_ug))
+lakes_summary_p <- lakes_tidy %>%
+  group_by(lakename) %>%
+  summarize(mean_p = mean(tp_ug), min_p = min(tp_ug), max_p = max(tp_ug),
+            sd_p = sd(tp_ug))
+```
 
 Create a third R chunk that uses the function `kable` in the knitr package to display two tables: one for the summary dataframe for total N and one for the summary dataframe of total P. Use the `caption = " "` code within that function to title your tables. Customize the chunk options such that the final table is displayed but not the code used to generate the table.
 
+```{r kable, eval=T, echo=F}
+knitr::kable(lakes_summary_n,
+      caption = "Summary of total nitrogen concentrations by lake")
+knitr::kable(lakes_summary_p,
+      caption = "Summary of total phosphorus concentrations by lake")
+```
+
 Create a fourth and fifth R chunk that generates two plots (one in each chunk): one for total N over time with different colors for each lake, and one with the same setup but for total P. Decide which geom option will be appropriate for your purpose, and select a color palette that is visually pleasing and accessible. Customize the chunk options such that the final figures are displayed but not the code used to generate the figures. In addition, customize the chunk options such that the figures are aligned on the left side of the page. Lastly, add a fig.cap chunk option to add a caption (title) to your plot that will display underneath the figure.
 
+```{r figure1, message=F, eval=T, echo=F, fig.align = "left", fig.cap="Progression of total nitrogen concentrations by lake from 1991 to 1999."}
+plot1 <- ggplot(lakes_tidy) +
+  geom_point(aes(x = sampledate, y = tn_ug, color = lakename), alpha = 0.3) + 
+  geom_smooth(aes(x = sampledate, y = tn_ug, color = lakename), se = F) + 
+  labs(x = "", y = "Total Nitrogen, ug", color = "Lake")
+plot1
+```
+
+```{r figure2, message=F, eval=T, echo=F, fig.align = "left", fig.cap="Progression of total phosphate concentrations by lake from 1991 to 1999."}
+plot2 <- ggplot(lakes_tidy) +
+  geom_point(aes(x = sampledate, y = tp_ug, color = lakename), alpha = 0.3) + 
+  geom_smooth(aes(x = sampledate, y = tp_ug, color = lakename), se = F) +
+  labs(x = "", y = "Total Phosphate, ug", color = "Lake")
+plot2
+```
+
+\newpage
 
 ### Communicating results
 
 Write a paragraph describing your findings from the R coding challenge above. This should be geared toward an educated audience but one that is not necessarily familiar with the dataset. Then insert a horizontal rule below the paragraph. Below the horizontal rule, write another paragraph describing the next steps you might take in analyzing this dataset. What questions might you be able to answer, and what analyses would you conduct to answer those questions?
 
+Overall, each lake appeared to exhibit similar trends in its total phosphate and total nitrogen over the study time period. Specifically, East Long Lake, West Long Lake, and Peter Lake reached peak concentrations of both nutrients around 1997 then proceeded to decrease again. However, two other lakes with data across the entire study time period, Tuesday Lake and Paul Lake, exhibited fairly constant concentrations of both nutrients. In contrast to this, overall, there appeared to be less relative variation in total nitrogen concentration among the lakes than there was in total phosphate.  
+
+* * *  
+
+Based on this exploratory visualization and analysis, statistical tests could provide elucidation as to whether the concentration of nutrients is significantly different among the lakes. Since the trends in nitrogen and phosphate appear to be similar within the same lake, statistical tests could also be used to determine the strength of the correlation between the two variables. Additionally, thus far our analysis has only included surface concentrations of nutrients, whereas further analysis could investigate whether the same trends in nutrient concentration appear at lower depths.
 
 ## KNIT YOUR PDF
 When you have completed the above steps, try knitting your PDF to see if all of the formatting options you specified turned out as planned. This may take some troubleshooting.
